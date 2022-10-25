@@ -45,6 +45,7 @@ class sumstats_1_trait(object):
                         "compliment SNPs.")
 
     def parse_input(self, sfile):
+        print('Parse', sfile, '...')
         DF = pd.read_table(sfile)
         data = pd.DataFrame()
         try:
@@ -58,6 +59,7 @@ class sumstats_1_trait(object):
                 try:
                     data['id'] = 'chr'+DF['chr'].map(str)+':'+DF['pos'].map(str)
                     id_type = 'pos'
+                    print('Note: CHR:POS will be used as SNP identifier')
                 except KeyError:
                     raise ValueError('Must provide either "rsid", "SNP"'
                                              ' or "chr" and "pos"')
@@ -85,6 +87,8 @@ class sumstats_1_trait(object):
         try:
             data['beta'] = DF['beta']
             data['SE'] = DF['SE']
+            if 'Z' in data.columns:
+                print('Note: Z column will be re-calculated from beta and SE')
             data['Z'] = data['beta']/data['SE']
         except KeyError:
             try:
@@ -96,6 +100,7 @@ class sumstats_1_trait(object):
                     data['beta'] = beta
                     data['SE'] = SE
                     data['Z'] = Z
+                    print('Note: beta, SE and Z will be calculated from OR and p-value columns')
                 except KeyError:
                     raise ValueError(
                         'Must provide either signed Z-scores 1) "Z", 2) "beta" and "SE",'
@@ -105,7 +110,7 @@ class sumstats_1_trait(object):
         valid_alleles = np.logical_and(has_comp['a1'], has_comp['a2'])
         data=data.loc[valid_alleles]
         data.replace([np.inf, -np.inf], np.nan, inplace=True)
-        data.dropna(subset=['id', 'a1', 'a2', 'N', 'beta', 'SE', 'Z'], inplace=True)
+        data.dropna(subset={'id', 'a1', 'a2', 'N', 'beta', 'SE', 'Z'}.intersection(data.columns), inplace=True)
         # else:
         #     data = pd.read_table(sfile,sep='\t',header=None,
         #                          names=['chr','id','pos','af','a1','a2',
